@@ -1,0 +1,39 @@
+{
+  "build_search": [
+    {
+      "query": "large language models",
+      "title": "Graph",
+      "author": "Hinton",
+      "category": "cs.LG",
+      "expected": "all:\"large language models\" +AND+ ti:Graph +AND+ au:Hinton +AND+ cat:cs.LG"
+    },
+    {
+      "query": null,
+      "title": "Neural Networks",
+      "author": null,
+      "category": null,
+      "expected": "ti:\"Neural Networks\""
+    }
+  ],
+  "sanitize": [
+    {
+      "input": "a<>:\"/\\|?*  name.pdf",
+      "expected": "a_________ name.pdf"
+    }
+  ],
+  "feed_parse": [
+    {
+      "feed_xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><feed xmlns=\"http://www.w3.org/2005/Atom\" xmlns:arxiv=\"http://arxiv.org/schemas/atom\"><entry><id>http://arxiv.org/abs/1234.5678v1</id><title>Test Paper</title><link rel=\"alternate\" type=\"text/html\" href=\"http://arxiv.org/abs/1234.5678v1\"/><link title=\"pdf\" href=\"https://arxiv.org/pdf/1234.5678v1.pdf\"/></entry></feed>",
+      "expected_id": "1234.5678v1",
+      "expected_title": "Test Paper",
+      "expected_pdf_suffix": "1234.5678v1.pdf"
+    }
+  ],
+  "download": [
+    {
+      "feed_xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><feed xmlns=\"http://www.w3.org/2005/Atom\" xmlns:arxiv=\"http://arxiv.org/schemas/atom\"><entry><id>http://arxiv.org/abs/1234.5678v1</id><title>Test Paper</title><link rel=\"alternate\" type=\"text/html\" href=\"http://arxiv.org/abs/1234.5678v1\"/><link title=\"pdf\" href=\"https://arxiv.org/pdf/1234.5678v1.pdf\"/></entry></feed>",
+      "pdf_content": "%PDF-JSON%\ncontent\n",
+      "expected_filename": "1234.5678v1 - Test Paper.pdf"
+    }
+  ]
+}

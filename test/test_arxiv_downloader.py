@@ -1,4 +1,5 @@
 import io
+import json
 import re
 import sys
 import tempfile
@@ -68,6 +69,14 @@ FEED_XML_ONE = b"""<?xml version="1.0" encoding="UTF-8"?>
 
 
 class TestArxivDownloader(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cases_path = THIS_DIR / "arxiv_downloader_cases.json"
+        if cases_path.exists():
+            with cases_path.open("r", encoding="utf-8") as f:
+                cls.cases = json.load(f)
+        else:
+            cls.cases = {}
     def test_build_search_query(self):
         q = arxiv_downloader.build_search_query(
             query="large language models", title="Graph", author="Hinton", category="cs.LG"
@@ -85,12 +94,26 @@ class TestArxivDownloader(unittest.TestCase):
         self.assertEqual(e.title, "Test Paper")
         self.assertTrue(e.pdf_url.endswith("1234.5678v1.pdf"))
 
+    def test_build_search_from_json_cases(self):
+        for case in self.cases.get("build_search", []):
+            with self.subTest(case=case):
+                built = arxiv_downloader.build_search_query(
+                    case.get("query"), case.get("title"), case.get("author"), case.get("category")
+                )
+                self.assertEqual(built, case["expected"])
+
     def test_sanitize_filename(self):
         unsafe = 'a<>:"/\\|?*  name.pdf'
         safe = arxiv_downloader.sanitize_filename(unsafe)
         self.assertNotRegex(safe, r"[\\/:*?\"<>|]")
         self.assertNotIn("  ", safe)
         self.assertTrue(safe.endswith("name.pdf"))
+
+    def test_sanitize_from_json_cases(self):
+        for case in self.cases.get("sanitize", []):
+            with self.subTest(case=case):
+                safe = arxiv_downloader.sanitize_filename(case["input"])
+                self.assertEqual(safe, case["expected"])
 
     def test_download_via_main_query(self):
         pdf_bytes = b"%PDF-FAKE%\ncontent\n"
@@ -114,6 +137,32 @@ class TestArxivDownloader(unittest.TestCase):
                 self.assertEqual(len(out_files), 1)
                 self.assertEqual(out_files[0].name, "1234.5678v1 - Test Paper.pdf")
                 self.assertEqual(out_files[0].read_bytes(), pdf_bytes)
+
+    def test_download_from_json_cases(self):
+        for case in self.cases.get("download", []):
+            with self.subTest(case=case):
+                feed_bytes = case["feed_xml"].encode("utf-8")
+                pdf_bytes = case["pdf_content"].encode("utf-8")
+                fake = make_fake_urlopen(feed_bytes=feed_bytes, pdf_bytes=pdf_bytes)
+                with tempfile.TemporaryDirectory() as td:
+                    with patch("arxiv_downloader.urllib.request.urlopen", side_effect=fake):
+                        ret = arxiv_downloader.main(
+                            [
+                                "--query",
+                                "anything",
+                                "--max-results",
+                                "1",
+                                "--out-dir",
+                                td,
+                                "--sleep",
+                                "0",
+                            ]
+                        )
+                        self.assertEqual(ret, 0)
+                        out_files = list(Path(td).glob("*.pdf"))
+                        self.assertEqual(len(out_files), 1)
+                        self.assertEqual(out_files[0].name, case["expected_filename"])
+                        self.assertEqual(out_files[0].read_bytes(), pdf_bytes)
 
     def test_main_ids_skip_existing_without_overwrite(self):
         pdf_bytes = b"existing"
