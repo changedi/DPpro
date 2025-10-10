@@ -94,6 +94,16 @@ class TestArxivDownloader(unittest.TestCase):
         self.assertEqual(e.title, "Test Paper")
         self.assertTrue(e.pdf_url.endswith("1234.5678v1.pdf"))
 
+    def test_feed_parse_from_json_cases(self):
+        for case in self.cases.get("feed_parse", []):
+            with self.subTest(case=case):
+                entries = arxiv_downloader.parse_atom_feed(case["feed_xml"].encode("utf-8"))
+                self.assertGreaterEqual(len(entries), 1)
+                e = entries[0]
+                self.assertEqual(e.arxiv_id, case["expected_id"])
+                self.assertEqual(e.title, case["expected_title"])
+                self.assertTrue(e.pdf_url.endswith(case["expected_pdf_suffix"]))
+
     def test_build_search_from_json_cases(self):
         for case in self.cases.get("build_search", []):
             with self.subTest(case=case):
