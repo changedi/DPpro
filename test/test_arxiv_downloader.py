@@ -95,25 +95,25 @@ class TestArxivDownloader(unittest.TestCase):
     def test_download_via_main_query(self):
         pdf_bytes = b"%PDF-FAKE%\ncontent\n"
         fake = make_fake_urlopen(feed_bytes=FEED_XML_ONE, pdf_bytes=pdf_bytes)
-        with tempfile.TemporaryDirectory() as td,
-             patch("arxiv_downloader.urllib.request.urlopen", side_effect=fake):
-            ret = arxiv_downloader.main(
-                [
-                    "--query",
-                    "anything",
-                    "--max-results",
-                    "1",
-                    "--out-dir",
-                    td,
-                    "--sleep",
-                    "0",
-                ]
-            )
-            self.assertEqual(ret, 0)
-            out_files = list(Path(td).glob("*.pdf"))
-            self.assertEqual(len(out_files), 1)
-            self.assertEqual(out_files[0].name, "1234.5678v1 - Test Paper.pdf")
-            self.assertEqual(out_files[0].read_bytes(), pdf_bytes)
+        with tempfile.TemporaryDirectory() as td:
+            with patch("arxiv_downloader.urllib.request.urlopen", side_effect=fake):
+                ret = arxiv_downloader.main(
+                    [
+                        "--query",
+                        "anything",
+                        "--max-results",
+                        "1",
+                        "--out-dir",
+                        td,
+                        "--sleep",
+                        "0",
+                    ]
+                )
+                self.assertEqual(ret, 0)
+                out_files = list(Path(td).glob("*.pdf"))
+                self.assertEqual(len(out_files), 1)
+                self.assertEqual(out_files[0].name, "1234.5678v1 - Test Paper.pdf")
+                self.assertEqual(out_files[0].read_bytes(), pdf_bytes)
 
     def test_main_ids_skip_existing_without_overwrite(self):
         pdf_bytes = b"existing"
